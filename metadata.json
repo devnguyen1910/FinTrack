@@ -1,0 +1,7 @@
+{
+  "name": "Trình quản lý tài chính cá nhân thông minh",
+  "description": "Một ứng dụng web chuyên nghiệp giúp bạn theo dõi thu nhập, chi tiêu, đặt ngân sách, mục tiêu tiết kiệm và nhận lời khuyên tài chính được cá nhân hóa từ AI.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
