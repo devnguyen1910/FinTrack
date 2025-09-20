@@ -16,10 +16,15 @@ import { Market } from './components/pages/Market';
 import { FinancialProvider } from './context/FinancialContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { LoginPage } from './components/pages/LoginPage';
 
 export type Page = 'dashboard' | 'transactions' | 'budgets' | 'goals' | 'advisor' | 'reports' | 'settings' | 'forecast' | 'recurring' | 'market';
 
-const AppContent: React.FC = () => {
+interface AppContentProps {
+  onLogout: () => void;
+}
+
+const AppContent: React.FC<AppContentProps> = ({ onLogout }) => {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -80,7 +85,7 @@ const AppContent: React.FC = () => {
     <div className="flex h-screen bg-light dark:bg-dark font-sans">
       <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onMenuClick={() => setIsSidebarOpen(true)} />
+        <Header onMenuClick={() => setIsSidebarOpen(true)} onLogout={onLogout} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light dark:bg-dark p-4 md:p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -100,12 +105,31 @@ const AppContent: React.FC = () => {
   );
 };
 
+const AuthWrapper: React.FC = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    const handleLoginSuccess = () => {
+        setIsAuthenticated(true);
+    };
+    
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+    };
+
+    if (!isAuthenticated) {
+        return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    }
+
+    return <AppContent onLogout={handleLogout} />;
+};
+
+
 const App: React.FC = () => {
   return (
     <ThemeProvider>
       <LanguageProvider>
         <FinancialProvider>
-          <AppContent />
+          <AuthWrapper />
         </FinancialProvider>
       </LanguageProvider>
     </ThemeProvider>

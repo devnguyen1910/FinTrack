@@ -50,5 +50,15 @@
     "previous_page": "Trang trước",
     "next_page": "Trang sau",
     "page": "Trang",
-    "of": "/"
+    "of": "/",
+    "login_title": "Đăng nhập",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "login_button": "Đăng nhập",
+    "login_error_credentials": "Tên đăng nhập hoặc mật khẩu không chính xác.",
+    "login_welcome_message": "Quản lý tài chính cá nhân của bạn một cách thông minh.",
+    "logout": "Đăng xuất",
+    "forgot_password": "Quên mật khẩu?",
+    "or_continue_with": "Hoặc tiếp tục với",
+    "signin_with_google": "Đăng nhập với Google"
 }
