@@ -2,6 +2,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { seedData } from './seed';
+
+// Nạp dữ liệu mẫu khi ứng dụng tải lần đầu, trước khi render
+seedData();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

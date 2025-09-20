@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { Modal } from '../ui/Modal';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { Goal } from '../../types';
 
 const GoalCard: React.FC<{ goal: Goal, onAddFunds: (id: string, amount: number) => void, onDelete: (id: string) => void }> = ({ goal, onAddFunds, onDelete }) => {
@@ -99,12 +100,26 @@ const AddGoalModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isO
 export const Goals: React.FC = () => {
     const { goals, updateGoal, deleteGoal } = useFinancials();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
 
     const handleAddFunds = (id: string, amount: number) => {
         const goal = goals.find(g => g.id === id);
         if (goal) {
             const newAmount = goal.currentAmount + amount;
             updateGoal({ ...goal, currentAmount: newAmount > goal.targetAmount ? goal.targetAmount : newAmount });
+        }
+    };
+    
+    const handleDelete = (id: string) => {
+        setDeletingGoalId(id);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (deletingGoalId) {
+            deleteGoal(deletingGoalId);
+            setDeletingGoalId(null);
         }
     };
     
@@ -120,7 +135,7 @@ export const Goals: React.FC = () => {
                 </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {goals.map(g => <GoalCard key={g.id} goal={g} onAddFunds={handleAddFunds} onDelete={deleteGoal} />)}
+                {goals.map(g => <GoalCard key={g.id} goal={g} onAddFunds={handleAddFunds} onDelete={handleDelete} />)}
             </div>
             {goals.length === 0 && (
                 <Card>
@@ -128,6 +143,14 @@ export const Goals: React.FC = () => {
                 </Card>
             )}
             <AddGoalModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận Xóa Mục tiêu"
+            >
+                Bạn có chắc chắn muốn xóa mục tiêu này không? Hành động này không thể hoàn tác.
+            </ConfirmationModal>
         </>
     );
 };

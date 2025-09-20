@@ -169,3 +169,31 @@ export const getForecast = async (transactions: Transaction[]): Promise<Forecast
     throw new Error("Failed to generate forecast.");
   }
 };
+
+export const suggestCategory = async (description: string, categories: string[]): Promise<string> => {
+    if (!description || categories.length === 0) return '';
+    try {
+        const model = 'gemini-2.5-flash';
+        const prompt = `Analyze the transaction description: "${description}". Based on this, choose the most suitable category from the following list: ${JSON.stringify(categories)}. Your response must be ONLY the name of the chosen category and nothing else.`;
+
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: prompt,
+            config: {
+                // Disable thinking for faster, more direct responses for this simple task
+                thinkingConfig: { thinkingBudget: 0 }
+            }
+        });
+
+        const suggested = response.text.trim();
+        // Validate if the suggestion is one of the provided categories
+        if (categories.includes(suggested)) {
+            return suggested;
+        }
+        return '';
+
+    } catch (error) {
+        console.error("Error suggesting category with Gemini API:", error);
+        return '';
+    }
+};

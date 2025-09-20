@@ -1,9 +1,11 @@
+
 import React, { useMemo } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { TransactionType } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Sector } from 'recharts';
 import { ICONS } from '../ui/Icons';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const StatCard: React.FC<{ title: string; amount: number; color: string }> = ({ title, amount, color }) => {
   const { formatCurrency } = useFinancials();
@@ -19,6 +21,7 @@ const StatCard: React.FC<{ title: string; amount: number; color: string }> = ({ 
 
 const FinancialHealthCard: React.FC = () => {
     const { transactions, budgets, debts } = useFinancials();
+    const { t } = useTranslation();
 
     const { score, status, savingsRate, debtToIncome } = useMemo(() => {
         const totalIncome = transactions.filter(t => t.type === TransactionType.INCOME).reduce((sum, t) => sum + t.amount, 0);
@@ -40,20 +43,20 @@ const FinancialHealthCard: React.FC = () => {
 
         let finalStatus: { text: string; color: string; };
         if (finalScore >= 80) {
-            finalStatus = { text: "Tuyệt vời", color: "text-secondary" };
+            finalStatus = { text: t('health_excellent'), color: "text-secondary" };
         } else if (finalScore >= 50) {
-            finalStatus = { text: "Khá tốt", color: "text-yellow-500" };
+            finalStatus = { text: t('health_good'), color: "text-yellow-500" };
         } else {
-            finalStatus = { text: "Cần cải thiện", color: "text-danger" };
+            finalStatus = { text: t('health_improvement'), color: "text-danger" };
         }
 
         return { score: finalScore, status: finalStatus, savingsRate: currentSavingsRate, debtToIncome: currentDebtToIncome };
-    }, [transactions, budgets, debts]);
+    }, [transactions, budgets, debts, t]);
 
     return (
         <Card className="flex flex-col justify-between h-full">
             <div>
-                <h4 className="text-gray-500 dark:text-gray-400 font-medium">Sức khỏe Tài chính</h4>
+                <h4 className="text-gray-500 dark:text-gray-400 font-medium">{t('financial_health')}</h4>
                 <div className="flex items-baseline space-x-2 mt-2">
                     <p className={`text-5xl font-bold ${status.color}`}>{score}</p>
                     <span className="text-2xl font-semibold text-gray-400">/ 100</span>
@@ -61,8 +64,8 @@ const FinancialHealthCard: React.FC = () => {
                 <p className={`mt-1 font-semibold ${status.color}`}>{status.text}</p>
             </div>
             <div className="text-sm mt-4 space-y-1 text-gray-600 dark:text-gray-400">
-                <p>Tỷ lệ tiết kiệm: <span className="font-bold">{(savingsRate * 100).toFixed(1)}%</span></p>
-                <p>Tỷ lệ nợ/thu nhập: <span className="font-bold">{(debtToIncome * 100).toFixed(1)}%</span></p>
+                <p>{t('savings_rate')}: <span className="font-bold">{(savingsRate * 100).toFixed(1)}%</span></p>
+                <p>{t('debt_to_income_ratio')}: <span className="font-bold">{(debtToIncome * 100).toFixed(1)}%</span></p>
             </div>
         </Card>
     );
@@ -70,6 +73,7 @@ const FinancialHealthCard: React.FC = () => {
 
 export const Dashboard: React.FC = () => {
   const { transactions, formatCurrency, getCategoryByName } = useFinancials();
+  const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = React.useState(0);
 
   const onPieEnter = (_: any, index: number) => {
@@ -188,7 +192,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Bảng điều khiển</h2>
+      <h2 className="text-3xl font-bold text-gray-800 dark:text-white">{t('dashboard')}</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content (Left Column) */}
@@ -196,13 +200,13 @@ export const Dashboard: React.FC = () => {
           
           {/* Key Metrics Section */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <StatCard title="Tổng thu nhập" amount={totalIncome} color="text-secondary" />
-            <StatCard title="Tổng chi tiêu" amount={totalExpense} color="text-danger" />
-            <StatCard title="Số dư" amount={balance} color="text-primary" />
+            <StatCard title={t('total_income')} amount={totalIncome} color="text-secondary" />
+            <StatCard title={t('total_expense')} amount={totalExpense} color="text-danger" />
+            <StatCard title={t('balance')} amount={balance} color="text-primary" />
           </div>
 
           {/* Income vs Expense Chart */}
-          <Card title="Tổng quan thu chi (7 ngày qua)">
+          <Card title={t('income_expense_overview_7_days')}>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.2)" />
@@ -210,14 +214,14 @@ export const Dashboard: React.FC = () => {
                 <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} />
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Legend />
-                <Bar dataKey="Thu nhập" fill="#10B981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Chi tiêu" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey={t('income')} fill="#10B981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey={t('expense')} fill="#EF4444" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
           {/* Recent Transactions */}
-          <Card title="Giao dịch gần đây">
+          <Card title={t('recent_transactions')}>
             <div className="space-y-3">
               {transactions.slice(-5).reverse().map((t) => {
                 const category = getCategoryByName(t.category);
@@ -240,7 +244,7 @@ export const Dashboard: React.FC = () => {
                   </div>
                 );
               })}
-              {transactions.length === 0 && <p className="text-center text-gray-500 py-4">Chưa có giao dịch nào.</p>}
+              {transactions.length === 0 && <p className="text-center text-gray-500 py-4">{t('no_transactions_yet')}</p>}
             </div>
           </Card>
         </div>
@@ -248,11 +252,9 @@ export const Dashboard: React.FC = () => {
         {/* Sidebar (Right Column) */}
         <div className="lg:col-span-1 space-y-6">
           
-          {/* Financial Health */}
           <FinancialHealthCard />
 
-          {/* Expense Allocation */}
-          <Card title="Phân bổ chi tiêu">
+          <Card title={t('expense_allocation')}>
             {pieData.length > 0 ? (
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
@@ -276,7 +278,7 @@ export const Dashboard: React.FC = () => {
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[350px] text-gray-500">
-                Chưa có dữ liệu chi tiêu.
+                {t('no_expense_data')}
               </div>
             )}
           </Card>

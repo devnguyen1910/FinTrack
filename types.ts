@@ -10,6 +10,8 @@ export interface Category {
 
 export type CategoryName = string;
 
+export type TransactionPriority = 'High' | 'Medium' | 'Low';
+
 export interface Transaction {
   id: string;
   type: TransactionType;
@@ -18,6 +20,7 @@ export interface Transaction {
   description: string;
   date: string; // ISO 8601 format
   receiptImage?: string; // Base64 data URL
+  priority?: TransactionPriority;
 }
 
 export type RecurringFrequency = 'weekly' | 'monthly' | 'yearly';
@@ -65,3 +68,12 @@ export interface Debt {
 }
 
 export type Currency = 'VND' | 'USD';
+
+export interface ReportData {
+  total: number;
+  byCategory: { name: string; value: number }[];
+  trend: { date: string; amount: number }[];
+  budgetComparison?: (Budget & { status: 'overspent' | 'on-track' })[];
+  monthlyComparison?: { [key: string]: string | number }[];
+  comparisonMonths?: string[];
+}

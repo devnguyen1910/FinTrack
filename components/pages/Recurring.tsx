@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { Modal } from '../ui/Modal';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { RecurringTransaction, TransactionType, CategoryName, RecurringFrequency } from '../../types';
 import { ICONS } from '../ui/Icons';
 
@@ -182,6 +183,8 @@ const AddRecurringTransactionModal: React.FC<{ isOpen: boolean; onClose: () => v
 export const Recurring: React.FC = () => {
     const { recurringTransactions, deleteRecurringTransaction, addTransaction, updateRecurringTransaction } = useFinancials();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
 
     const handlePostTransaction = (transaction: RecurringTransaction, postDate: Date) => {
         addTransaction({
@@ -197,6 +200,18 @@ export const Recurring: React.FC = () => {
             ...transaction,
             lastPostedDate: postDate.toISOString().split('T')[0],
         });
+    };
+
+    const handleDelete = (id: string) => {
+        setDeletingTransactionId(id);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (deletingTransactionId) {
+            deleteRecurringTransaction(deletingTransactionId);
+            setDeletingTransactionId(null);
+        }
     };
 
     const sortedTransactions = [...recurringTransactions].sort((a,b) => {
@@ -219,7 +234,7 @@ export const Recurring: React.FC = () => {
                     <RecurringTransactionCard 
                         key={t.id} 
                         transaction={t} 
-                        onDelete={deleteRecurringTransaction}
+                        onDelete={handleDelete}
                         onPost={handlePostTransaction}
                     />
                 ))}
@@ -230,6 +245,14 @@ export const Recurring: React.FC = () => {
                 </Card>
             )}
             <AddRecurringTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận Xóa Giao dịch Định kỳ"
+            >
+                Bạn có chắc chắn muốn xóa giao dịch định kỳ này không?
+            </ConfirmationModal>
         </>
     );
 };

@@ -1,8 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { getFinancialAdvice } from '../../services/geminiService';
+import { Error } from '../ui/Error';
 
 interface Message {
   id: string;
@@ -44,6 +44,7 @@ export const Advisor: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -55,6 +56,7 @@ export const Advisor: React.FC = () => {
   const handleSend = async () => {
     if (input.trim() === '' || isLoading) return;
 
+    setError(null);
     const userMessage: Message = {
       id: crypto.randomUUID(),
       sender: 'user',
@@ -84,13 +86,7 @@ export const Advisor: React.FC = () => {
       };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        sender: 'ai',
-        text: 'Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+       setError("Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
     }
@@ -134,10 +130,11 @@ export const Advisor: React.FC = () => {
                 </div>
             </div>
           )}
+          {error && <Error message={error} onRetry={handleSend} />}
           <div ref={messagesEndRef} />
         </div>
 
-        {messages.length <= 1 && !isLoading && (
+        {messages.length <= 1 && !isLoading && !error &&(
             <div className="p-4 border-t dark:border-gray-700">
                 <p className="text-sm text-gray-500 mb-2">Gợi ý cho bạn:</p>
                 <div className="flex flex-wrap gap-2">

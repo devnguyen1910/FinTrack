@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { getForecast, ForecastResult } from '../../services/geminiService';
+import { Loading } from '../ui/Loading';
+import { Error } from '../ui/Error';
 
 const StatCard: React.FC<{ title: string; amount: number; color: string }> = ({ title, amount, color }) => {
   const { formatCurrency } = useFinancials();
@@ -14,13 +16,6 @@ const StatCard: React.FC<{ title: string; amount: number; color: string }> = ({ 
     </Card>
   );
 };
-
-const LoadingSpinner: React.FC = () => (
-    <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
-    </div>
-);
-
 
 export const Forecast: React.FC = () => {
     const { transactions } = useFinancials();
@@ -65,9 +60,9 @@ export const Forecast: React.FC = () => {
                 </div>
             </Card>
 
-            {isLoading && <LoadingSpinner />}
+            {isLoading && <Loading text="AI đang phân tích dữ liệu của bạn..." />}
 
-            {error && <Card><p className="text-center text-danger p-4">{error}</p></Card>}
+            {error && <Error message={error} onRetry={handleGenerateForecast} />}
 
             {forecast && (
                 <div className="space-y-6">

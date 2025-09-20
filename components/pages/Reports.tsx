@@ -1,23 +1,13 @@
 import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
-import { TransactionType, Budget } from '../../types';
+import { TransactionType, Budget, ReportData } from '../../types';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 
 type ReportType = 'expense' | 'income' | 'budget' | 'expense-allocation';
-
-interface ReportData {
-  total: number;
-  byCategory: { name: string; value: number }[];
-  trend: { date: string; amount: number }[];
-  budgetComparison?: (Budget & { status: 'overspent' | 'on-track' })[];
-  // FIX: Changed type to allow for a string 'name' property alongside numeric month properties.
-  monthlyComparison?: { [key: string]: string | number }[];
-  comparisonMonths?: string[];
-}
 
 const ReportControls: React.FC<{
   reportType: ReportType;
@@ -185,7 +175,6 @@ const ExpenseAllocationReport: React.FC<{ data: ReportData }> = ({ data }) => {
                     {data.byCategory.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
-                                {/* FIX: Explicitly type the label props as any to resolve TypeScript errors with Recharts type inference. */}
                                 <Pie data={data.byCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
                                     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
                                     const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
@@ -336,7 +325,6 @@ export const Reports: React.FC = () => {
                 .map(entry => entry[0]);
 
             data.monthlyComparison = topCategories.map(category => {
-                // FIX: Changed type to be compatible with the updated ReportData interface.
                 const row: { [key: string]: string | number } = { name: category };
                 comparisonMonths.forEach(month => {
                     row[month] = monthlyData[month][category] || 0;

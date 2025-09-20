@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from './Modal';
-import { Transaction, TransactionType } from '../../types';
+import { Transaction, TransactionType, TransactionPriority } from '../../types';
 import { useFinancials } from '../../context/FinancialContext';
 import { ICONS } from './Icons';
 
@@ -20,6 +20,12 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ 
   const category = getCategoryByName(transaction.category);
   const isIncome = transaction.type === TransactionType.INCOME;
   const amountColor = isIncome ? 'text-secondary' : 'text-danger';
+
+  const priorityInfo: { [key in TransactionPriority]: { color: string; label: string } } = {
+        High: { color: 'text-danger', label: 'Cao' },
+        Medium: { color: 'text-warning', label: 'Trung bình' },
+        Low: { color: 'text-blue-500', label: 'Thấp' },
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Chi tiết Giao dịch">
@@ -43,29 +49,35 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ 
             </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="p-3 bg-light dark:bg-dark rounded-lg">
+        <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-light dark:bg-dark rounded-lg text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Số tiền</p>
                 <p className={`font-bold text-2xl ${amountColor}`}>
                     {isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
                 </p>
             </div>
-             <div className="p-3 bg-light dark:bg-dark rounded-lg">
+             <div className="p-3 bg-light dark:bg-dark rounded-lg text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Ngày</p>
                 <p className="font-bold text-lg">
                     {new Date(transaction.date).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
             </div>
+            <div className="p-3 bg-light dark:bg-dark rounded-lg text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loại giao dịch</p>
+                <p className={`font-semibold ${amountColor}`}>
+                    {isIncome ? 'Thu nhập' : 'Chi tiêu'}
+                </p>
+            </div>
+             {transaction.priority && (
+                 <div className="p-3 bg-light dark:bg-dark rounded-lg text-center">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Độ ưu tiên</p>
+                    <p className={`font-semibold ${priorityInfo[transaction.priority].color}`}>
+                        {priorityInfo[transaction.priority].label}
+                    </p>
+                </div>
+            )}
         </div>
         
-         <div className="p-3 bg-light dark:bg-dark rounded-lg">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Loại giao dịch</p>
-            <p className={`font-semibold ${amountColor}`}>
-                {isIncome ? 'Thu nhập' : 'Chi tiêu'}
-            </p>
-        </div>
-
-
         <div className="flex justify-end space-x-3 pt-4">
           <button 
             onClick={() => onEdit(transaction)} 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal } from './Modal';
 import { useFinancials } from '../../context/FinancialContext';
-import { TransactionType, CategoryName, Transaction } from '../../types';
+import { TransactionType, CategoryName, Transaction, TransactionPriority } from '../../types';
+import { suggestCategory } from '../../services/geminiService';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -9,6 +10,20 @@ interface AddTransactionModalProps {
   initialData?: Partial<Omit<Transaction, 'id'>>;
   transactionToEdit?: Transaction | null;
 }
+
+// Custom hook for debouncing
+const useDebounce = (value: string, delay: number) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
+};
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClose, initialData, transactionToEdit }) => {
   const { addTransaction, updateTransaction, expenseCategories, incomeCategories } = useFinancials();
@@ -18,30 +33,47 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [receiptImage, setReceiptImage] = useState<string | undefined>(undefined);
-  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const [priority, setPriority] = useState<TransactionPriority>('Low');
+  
+  const [suggestedCategory, setSuggestedCategory] = useState('');
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
+  const receiptInputRef = useRef<HTMLInputElement>(null);
   const isEditMode = !!transactionToEdit;
+  const debouncedDescription = useDebounce(description, 500);
+
+  const getCategories = useCallback(() => type === TransactionType.EXPENSE ? expenseCategories : incomeCategories, [type, expenseCategories, incomeCategories]);
 
   useEffect(() => {
-    // Set initial category when component loads or categories change for add mode
-    if (!isEditMode) {
-      if (type === TransactionType.EXPENSE && expenseCategories.length > 0) {
-          setCategory(expenseCategories[0].name);
-      } else if (type === TransactionType.INCOME && incomeCategories.length > 0) {
-          setCategory(incomeCategories[0].name);
-      }
-    }
-  }, [type, expenseCategories, incomeCategories, isEditMode]);
+    const fetchSuggestion = async () => {
+        if (debouncedDescription.length > 3 && type === TransactionType.EXPENSE && !isEditMode) {
+            setIsSuggesting(true);
+            const categoryNames = getCategories().map(c => c.name);
+            const suggestion = await suggestCategory(debouncedDescription, categoryNames);
+            if (suggestion) {
+                setSuggestedCategory(suggestion);
+            }
+            setIsSuggesting(false);
+        } else {
+            setSuggestedCategory('');
+        }
+    };
+    fetchSuggestion();
+  }, [debouncedDescription, type, getCategories, isEditMode]);
 
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
+    const cats = getCategories();
     setType(TransactionType.EXPENSE);
-    setCategory(expenseCategories[0]?.name || '');
+    setCategory(cats[0]?.name || '');
     setAmount('');
     setDescription('');
     setDate(new Date().toISOString().split('T')[0]);
     setReceiptImage(undefined);
-  };
+    setPriority('Low');
+    setSuggestedCategory('');
+    setIsSuggesting(false);
+  }, [getCategories]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -56,26 +88,25 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
             setDescription(data.description || '');
             setDate(data.date || new Date().toISOString().split('T')[0]);
             setReceiptImage(transactionToEdit?.receiptImage);
+            setPriority(data.priority || 'Low');
         } else {
             resetForm();
         }
     }
-  }, [initialData, transactionToEdit, isOpen, expenseCategories, incomeCategories]);
+  }, [initialData, transactionToEdit, isOpen, expenseCategories, incomeCategories, resetForm]);
 
 
-  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value as TransactionType;
+  const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
-    setCategory(newType === TransactionType.EXPENSE ? expenseCategories[0]?.name : incomeCategories[0]?.name || '');
+    const cats = newType === TransactionType.EXPENSE ? expenseCategories : incomeCategories;
+    setCategory(cats[0]?.name || '');
   };
 
   const handleReceiptChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (file) {
           const reader = new FileReader();
-          reader.onloadend = () => {
-              setReceiptImage(reader.result as string);
-          };
+          reader.onloadend = () => setReceiptImage(reader.result as string);
           reader.readAsDataURL(file);
       }
   };
@@ -84,15 +115,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
     e.preventDefault();
     if (!amount || !description || !category || !date) return;
 
-    const transactionData = {
-      type,
-      category,
-      amount: parseFloat(amount),
-      description,
-      date,
-      receiptImage,
-    };
-
+    const transactionData = { type, category, amount: parseFloat(amount), description, date, receiptImage, priority };
     if (isEditMode) {
         updateTransaction({ ...transactionData, id: transactionToEdit.id });
     } else {
@@ -100,50 +123,63 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
     }
     
     onClose();
-    resetForm();
   };
-  
-  const categories = type === TransactionType.EXPENSE ? expenseCategories : incomeCategories;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEditMode ? "Chỉnh sửa giao dịch" : (initialData ? "Xác nhận giao dịch" : "Thêm giao dịch mới")}>
+    <Modal isOpen={isOpen} onClose={onClose} title={isEditMode ? "Chỉnh sửa giao dịch" : "Thêm giao dịch mới"}>
        <input
-            type="file"
-            accept="image/*"
-            ref={receiptInputRef}
-            onChange={handleReceiptChange}
-            className="hidden"
-            aria-hidden="true"
+            type="file" accept="image/*" ref={receiptInputRef} onChange={handleReceiptChange}
+            className="hidden" aria-hidden="true"
         />
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Loại giao dịch</label>
-          <select value={type} onChange={handleTypeChange} className="block w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
-            <option value={TransactionType.EXPENSE}>Chi tiêu</option>
-            <option value={TransactionType.INCOME}>Thu nhập</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Danh mục</label>
-          <select value={category} onChange={e => setCategory(e.target.value as CategoryName)} className="block w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
-            {categories.map(cat => <option key={cat.name} value={cat.name}>{cat.name}</option>)}
-          </select>
-        </div>
-         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Số tiền (VND)</label>
-          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="block w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mô tả</label>
-          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="VD: Ăn trưa" className="block w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày</label>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="block w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex space-x-2 rounded-lg bg-gray-200 dark:bg-dark p-1">
+            <button type="button" onClick={() => handleTypeChange(TransactionType.EXPENSE)} className={`w-full p-2 text-sm font-semibold rounded-md transition ${type === TransactionType.EXPENSE ? 'bg-danger text-white' : 'hover:bg-gray-300 dark:hover:bg-dark-secondary'}`}>Chi tiêu</button>
+            <button type="button" onClick={() => handleTypeChange(TransactionType.INCOME)} className={`w-full p-2 text-sm font-semibold rounded-md transition ${type === TransactionType.INCOME ? 'bg-secondary text-white' : 'hover:bg-gray-300 dark:hover:bg-dark-secondary'}`}>Thu nhập</button>
         </div>
 
         <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hóa đơn</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mô tả</label>
+          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="VD: Ăn trưa cùng đồng nghiệp" className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
+          {isSuggesting && <p className="text-xs text-gray-500 mt-1">AI đang gợi ý danh mục...</p>}
+          {suggestedCategory && category !== suggestedCategory && (
+            <div className="mt-2 text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Gợi ý: </span>
+                <button type="button" onClick={() => setCategory(suggestedCategory)} className="px-2 py-0.5 bg-primary/20 text-primary font-semibold rounded-full hover:bg-primary/30">
+                    {suggestedCategory}
+                </button>
+            </div>
+           )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Danh mục</label>
+              <select value={category} onChange={e => setCategory(e.target.value as CategoryName)} className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
+                {getCategories().map(cat => <option key={cat.name} value={cat.name}>{cat.name}</option>)}
+              </select>
+            </div>
+             <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Số tiền</label>
+              <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
+            </div>
+        </div>
+       
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày</label>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Độ ưu tiên</label>
+                <select value={priority} onChange={e => setPriority(e.target.value as TransactionPriority)} className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
+                    <option value="Low">Thấp</option>
+                    <option value="Medium">Trung bình</option>
+                    <option value="High">Cao</option>
+                </select>
+            </div>
+        </div>
+
+        <div>
             {receiptImage ? (
                 <div className="relative group w-32 h-32">
                     <img src={receiptImage} alt="Xem trước hóa đơn" className="w-full h-full object-cover rounded-md border border-gray-300 dark:border-gray-600" />
@@ -152,14 +188,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
                     </button>
                 </div>
             ) : (
-                <button type="button" onClick={() => receiptInputRef.current?.click()} className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md p-4 text-center text-gray-500 hover:border-primary hover:text-primary">
+                <button type="button" onClick={() => receiptInputRef.current?.click()} className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md p-4 text-center text-gray-500 hover:border-primary hover:text-primary transition-colors">
                     Đính kèm Hóa đơn
                 </button>
             )}
         </div>
 
-
-        <div className="flex justify-end space-x-3 pt-3">
+        <div className="flex justify-end space-x-3 pt-3 border-t dark:border-gray-700">
             <button type="button" onClick={onClose} className="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500">Hủy</button>
             <button type="submit" className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark">{isEditMode ? 'Lưu thay đổi' : 'Thêm'}</button>
         </div>

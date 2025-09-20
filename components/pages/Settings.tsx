@@ -1,9 +1,10 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
-import { TransactionType, Category, CategoryName, Transaction, Currency } from '../../types';
+import { TransactionType, Category, CategoryName, Transaction, Currency, Loan, Debt } from '../../types';
 import { FinancialCalendar } from '../ui/FinancialCalendar';
 import { Modal } from '../ui/Modal';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { ICONS, iconList } from '../ui/Icons';
 
 
@@ -42,6 +43,8 @@ const CategoryManager: React.FC<{
 }> = ({ title, categories, type }) => {
   const { addCategory, updateCategory, deleteCategory, transactions, budgets, recurringTransactions } = useFinancials();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [deletingCategoryName, setDeletingCategoryName] = React.useState<CategoryName | null>(null);
   const [isEditing, setIsEditing] = React.useState(false);
   const [currentCategory, setCurrentCategory] = React.useState<Category | null>(null);
   
@@ -100,8 +103,14 @@ const CategoryManager: React.FC<{
       return;
     }
 
-    if (window.confirm(`Bạn có chắc chắn muốn xóa danh mục "${categoryName}"?`)) {
-        deleteCategory(categoryName, type);
+    setDeletingCategoryName(categoryName);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDeleteCategory = () => {
+    if (deletingCategoryName) {
+        deleteCategory(deletingCategoryName, type);
+        setDeletingCategoryName(null);
     }
   };
 
@@ -153,6 +162,15 @@ const CategoryManager: React.FC<{
             </div>
         </div>
       </Modal>
+
+      <ConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDeleteCategory}
+        title={`Xác nhận Xóa Danh mục`}
+      >
+        {`Bạn có chắc muốn xóa danh mục "${deletingCategoryName}" không?`}
+      </ConfirmationModal>
     </Card>
   );
 };
@@ -163,6 +181,8 @@ const LoanManager: React.FC = () => {
     const [principal, setPrincipal] = React.useState('');
     const [interestRate, setInterestRate] = React.useState('');
     const [maturityDate, setMaturityDate] = React.useState('');
+    const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+    const [deletingLoan, setDeletingLoan] = React.useState<Loan | null>(null);
 
     const handleAddLoan = (e: React.FormEvent) => {
         e.preventDefault();
@@ -182,23 +202,48 @@ const LoanManager: React.FC = () => {
         setMaturityDate('');
     };
 
+    const handleMarkAsPaid = (loan: Loan) => {
+        setDeletingLoan(loan);
+        setIsConfirmOpen(true);
+    }
+
+    const confirmDeleteLoan = () => {
+        if (deletingLoan) {
+            deleteLoan(deletingLoan.id);
+            setDeletingLoan(null);
+        }
+    };
+
     return (
         <Card title="Quản lý Khoản vay">
-            <ul className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2">
+            <ul className="space-y-4 mb-4 max-h-96 overflow-y-auto pr-2">
                 {loans.length === 0 && <li className="text-sm text-center text-gray-500 py-4">Chưa có khoản vay nào.</li>}
                 {loans.map(loan => (
-                    <li key={loan.id} className="flex items-center justify-between p-3 bg-light dark:bg-dark rounded-md">
-                        <div>
-                            <p className="font-semibold">{loan.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {`Gốc: ${formatCurrency(loan.principal)} | Lãi: ${loan.interestRate}%`}
-                            </p>
-                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {`Đáo hạn: ${new Date(loan.maturityDate).toLocaleDateString('vi-VN')}`}
-                            </p>
+                    <li key={loan.id} className="p-4 bg-light dark:bg-dark rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="flex justify-between items-start mb-3">
+                            <h5 className="font-bold text-lg text-gray-800 dark:text-gray-100">{loan.name}</h5>
                         </div>
-                        <button onClick={() => deleteLoan(loan.id)} className="text-secondary hover:text-green-500 p-2" aria-label={`Đánh dấu đã trả cho khoản vay ${loan.name}`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm mb-4">
+                            <div className="flex flex-col">
+                                <span className="text-gray-500 dark:text-gray-400">Số tiền gốc</span>
+                                <span className="font-semibold text-base">{formatCurrency(loan.principal)}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-gray-500 dark:text-gray-400">Lãi suất</span>
+                                <span className="font-semibold text-base">{loan.interestRate}% / năm</span>
+                            </div>
+                            <div className="flex flex-col col-span-2">
+                                <span className="text-gray-500 dark:text-gray-400">Ngày đáo hạn</span>
+                                <span className="font-semibold text-base">{new Date(loan.maturityDate).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => handleMarkAsPaid(loan)} 
+                            className="w-full bg-secondary text-white px-4 py-2 rounded-md hover:bg-green-600 font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                            aria-label={`Đánh dấu đã trả cho khoản vay ${loan.name}`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            Đánh dấu là đã trả xong
                         </button>
                     </li>
                 ))}
@@ -225,6 +270,14 @@ const LoanManager: React.FC = () => {
                 </div>
                 <button type="submit" className="w-full bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark font-semibold">Thêm khoản vay</button>
             </form>
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDeleteLoan}
+                title="Xác nhận Hoàn tất Khoản vay"
+            >
+                {`Bạn có chắc chắn muốn đánh dấu khoản vay "${deletingLoan?.name}" là đã trả xong? Hành động này sẽ xóa khoản vay khỏi danh sách.`}
+            </ConfirmationModal>
         </Card>
     );
 };
@@ -234,6 +287,8 @@ const DebtManager: React.FC = () => {
     const [name, setName] = React.useState('');
     const [amount, setAmount] = React.useState('');
     const [dueDate, setDueDate] = React.useState('');
+    const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+    const [deletingDebt, setDeletingDebt] = React.useState<Debt | null>(null);
 
     const handleAddDebt = (e: React.FormEvent) => {
         e.preventDefault();
@@ -245,6 +300,18 @@ const DebtManager: React.FC = () => {
         setName('');
         setAmount('');
         setDueDate('');
+    };
+
+    const handleDeleteDebt = (debt: Debt) => {
+        setDeletingDebt(debt);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDeleteDebt = () => {
+        if (deletingDebt) {
+            deleteDebt(deletingDebt.id);
+            setDeletingDebt(null);
+        }
     };
 
     return (
@@ -262,7 +329,7 @@ const DebtManager: React.FC = () => {
                                 {`Đến hạn: ${new Date(debt.dueDate).toLocaleDateString('vi-VN')}`}
                             </p>
                         </div>
-                        <button onClick={() => deleteDebt(debt.id)} className="text-secondary hover:text-green-500 p-2" aria-label={`Đánh dấu đã trả cho khoản nợ ${debt.name}`}>
+                        <button onClick={() => handleDeleteDebt(debt)} className="text-secondary hover:text-green-500 p-2" aria-label={`Đánh dấu đã trả cho khoản nợ ${debt.name}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                         </button>
                     </li>
@@ -284,6 +351,14 @@ const DebtManager: React.FC = () => {
                 </div>
                 <button type="submit" className="w-full bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark font-semibold">Thêm khoản nợ</button>
             </form>
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDeleteDebt}
+                title="Xác nhận Hoàn tất Khoản nợ"
+            >
+                {`Bạn có chắc chắn muốn xóa khoản nợ "${deletingDebt?.name}" không?`}
+            </ConfirmationModal>
         </Card>
     );
 };

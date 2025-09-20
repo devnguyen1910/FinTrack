@@ -7,16 +7,23 @@ const DEFAULT_EXPENSE_CATEGORIES: Category[] = [
   { name: 'Di chuyển', icon: 'transport' },
   { name: 'Nhà ở', icon: 'housing' },
   { name: 'Tiện ích', icon: 'utilities' },
-  { name: 'Sức khỏe', icon: 'health' },
-  { name: 'Giải trí', icon: 'entertainment' },
-  { name: 'Giáo dục', icon: 'education' },
+  { name: 'Hóa đơn & Dịch vụ', icon: 'default' },
   { name: 'Mua sắm', icon: 'shopping' },
+  { name: 'Giải trí', icon: 'entertainment' },
+  { name: 'Sức khỏe', icon: 'health' },
+  { name: 'Giáo dục', icon: 'education' },
+  { name: 'Gia đình & Con cái', icon: 'default' },
+  { name: 'Đầu tư & Tiết kiệm', icon: 'investment' },
+  { name: 'Du lịch', icon: 'default' },
+  { name: 'Quà tặng & Từ thiện', icon: 'gift' },
   { name: 'Khác', icon: 'default' }
 ];
 const DEFAULT_INCOME_CATEGORIES: Category[] = [
   { name: 'Lương', icon: 'salary' },
   { name: 'Thưởng', icon: 'bonus' },
+  { name: 'Kinh doanh', icon: 'default' },
   { name: 'Đầu tư', icon: 'investment' },
+  { name: 'Làm thêm', icon: 'default' },
   { name: 'Quà tặng', icon: 'gift' },
   { name: 'Khác', icon: 'default' }
 ];

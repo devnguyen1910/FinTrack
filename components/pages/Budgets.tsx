@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { Modal } from '../ui/Modal';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { Budget, CategoryName } from '../../types';
 import { ICONS } from '../ui/Icons';
 
@@ -122,6 +123,20 @@ const AddBudgetModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ i
 export const Budgets: React.FC = () => {
     const { budgets, deleteBudget } = useFinancials();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [deletingBudgetId, setDeletingBudgetId] = useState<string | null>(null);
+
+    const handleDelete = (id: string) => {
+        setDeletingBudgetId(id);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (deletingBudgetId) {
+            deleteBudget(deletingBudgetId);
+            setDeletingBudgetId(null);
+        }
+    };
 
     return (
         <>
@@ -135,7 +150,7 @@ export const Budgets: React.FC = () => {
                 </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {budgets.map(b => <BudgetCard key={b.id} budget={b} onDelete={deleteBudget} />)}
+                {budgets.map(b => <BudgetCard key={b.id} budget={b} onDelete={handleDelete} />)}
             </div>
             {budgets.length === 0 && (
                 <Card>
@@ -143,6 +158,14 @@ export const Budgets: React.FC = () => {
                 </Card>
             )}
             <AddBudgetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận Xóa Ngân sách"
+            >
+                Bạn có chắc chắn muốn xóa ngân sách này không? Hành động này không thể hoàn tác.
+            </ConfirmationModal>
         </>
     );
 };
