@@ -13,12 +13,14 @@ import { Settings } from './components/pages/Settings';
 import { Forecast } from './components/pages/Forecast';
 import { Recurring } from './components/pages/Recurring';
 import { Market } from './components/pages/Market';
+import { MarketAnalysis } from './components/pages/MarketAnalysis';
+import { PortfolioManagement } from './components/pages/PortfolioManagement';
 import { FinancialProvider } from './context/FinancialContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { LoginPage } from './components/pages/LoginPage';
 
-export type Page = 'dashboard' | 'transactions' | 'budgets' | 'goals' | 'advisor' | 'reports' | 'settings' | 'forecast' | 'recurring' | 'market';
+export type Page = 'dashboard' | 'transactions' | 'budgets' | 'goals' | 'advisor' | 'reports' | 'settings' | 'forecast' | 'recurring' | 'market' | 'market-analysis' | 'portfolio';
 
 interface AppContentProps {
   onLogout: () => void;
@@ -62,6 +64,10 @@ const AppContent: React.FC<AppContentProps> = ({ onLogout }) => {
         return <Recurring />;
       case 'market':
         return <Market />;
+      case 'market-analysis':
+        return <MarketAnalysis />;
+      case 'portfolio':
+        return <PortfolioManagement />;
       case 'settings':
         return <Settings />;
       default:

@@ -166,12 +166,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
        
         <div className="grid grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày</label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
+                <label htmlFor="date-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày</label>
+                <input id="date-input" type="date" title="Chọn ngày giao dịch" value={date} onChange={e => setDate(e.target.value)} className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required/>
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Độ ưu tiên</label>
-                <select value={priority} onChange={e => setPriority(e.target.value as TransactionPriority)} className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
+                <label htmlFor="priority-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Độ ưu tiên</label>
+                <select id="priority-select" title="Chọn độ ưu tiên" value={priority} onChange={e => setPriority(e.target.value as TransactionPriority)} className="block w-full bg-light dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
                     <option value="Low">Thấp</option>
                     <option value="Medium">Trung bình</option>
                     <option value="High">Cao</option>
@@ -183,7 +183,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
             {receiptImage ? (
                 <div className="relative group w-32 h-32">
                     <img src={receiptImage} alt="Xem trước hóa đơn" className="w-full h-full object-cover rounded-md border border-gray-300 dark:border-gray-600" />
-                    <button type="button" onClick={() => setReceiptImage(undefined)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button type="button" title="Xóa hình ảnh" onClick={() => setReceiptImage(undefined)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                     </button>
                 </div>
