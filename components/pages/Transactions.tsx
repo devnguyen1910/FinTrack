@@ -8,6 +8,9 @@ import { Transaction, TransactionType, TransactionPriority } from '../../types';
 import { analyzeBillImage } from '../../services/geminiService';
 import { ICONS } from '../ui/Icons';
 import { useTranslation } from '../../hooks/useTranslation';
+import { Loading } from '../ui/Loading';
+// FIX: Aliased the Error component to avoid name collision with the built-in Error object.
+import { Error as ErrorComponent } from '../ui/Error';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -279,6 +282,7 @@ export const Transactions: React.FC = () => {
 
     // Other State
     const [isLoading, setIsLoading] = useState(false);
+    const [scanError, setScanError] = useState<string | null>(null);
     const [scannedData, setScannedData] = useState<Partial<Omit<Transaction, 'id'>> | null>(null);
     const [view, setView] = useState<'list' | 'calendar'>('list');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -288,12 +292,16 @@ export const Transactions: React.FC = () => {
         if (!file) return;
 
         setIsLoading(true);
+        setScanError(null);
         const reader = new FileReader();
         reader.onloadend = async () => {
             const base64String = reader.result?.toString().split(',')[1];
             if (base64String) {
                 try {
                     const result = await analyzeBillImage(base64String, file.type, expenseCategories.map(c => c.name));
+                     if (!result || Object.keys(result).length === 0) {
+                        throw new Error("Không thể trích xuất thông tin từ hóa đơn. Vui lòng thử ảnh rõ nét hơn.");
+                    }
                     setScannedData({
                         ...result,
                         type: TransactionType.EXPENSE,
@@ -302,17 +310,27 @@ export const Transactions: React.FC = () => {
                     setIsAddOrEditModalOpen(true);
                 } catch (error) {
                     console.error("Failed to analyze image:", error);
-                    alert("Không thể phân tích hình ảnh. Vui lòng thử lại.");
+                    setScanError(error instanceof Error ? error.message : "Không thể phân tích hình ảnh. Vui lòng thử lại.");
                 } finally {
                     setIsLoading(false);
                 }
+            } else {
+                setScanError("Không thể đọc tệp hình ảnh.");
+                setIsLoading(false);
             }
+        };
+        reader.onerror = () => {
+            setScanError("Đã xảy ra lỗi khi đọc tệp.");
+            setIsLoading(false);
         };
         reader.readAsDataURL(file);
         event.target.value = '';
     };
 
-    const handleScanClick = () => fileInputRef.current?.click();
+    const handleScanClick = () => {
+        setScanError(null);
+        fileInputRef.current?.click();
+    };
 
     const handleCloseAddOrEditModal = () => {
         setIsAddOrEditModalOpen(false);
@@ -467,6 +485,9 @@ export const Transactions: React.FC = () => {
                 </div>
             </Card>
             
+            {isLoading && <Card className="mt-6"><Loading text="AI đang phân tích hóa đơn của bạn..." /></Card>}
+            {scanError && <div className="mt-6"><ErrorComponent message={scanError} onRetry={handleScanClick} /></div>}
+
             {view === 'list' ? (
                 <>
                     {/* Mobile View */}

@@ -181,7 +181,8 @@ const ExpenseAllocationReport: React.FC<{ data: ReportData }> = ({ data }) => {
                                     const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
                                     return (
                                         <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="font-bold text-sm">
-                                            {`${(percent * 100).toFixed(0)}%`}
+                                            {/* FIX: The 'percent' prop can be undefined. Add a fallback to 0 to prevent type errors during arithmetic operations. */}
+                                            {`${((percent || 0) * 100).toFixed(0)}%`}
                                         </text>
                                     );
                                 }}>

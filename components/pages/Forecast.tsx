@@ -3,7 +3,8 @@ import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { getForecast, ForecastResult } from '../../services/geminiService';
 import { Loading } from '../ui/Loading';
-import { Error } from '../ui/Error';
+// FIX: Aliased the Error component to avoid name collision with the built-in Error object.
+import { Error as ErrorComponent } from '../ui/Error';
 
 const StatCard: React.FC<{ title: string; amount: number; color: string }> = ({ title, amount, color }) => {
   const { formatCurrency } = useFinancials();
@@ -62,7 +63,7 @@ export const Forecast: React.FC = () => {
 
             {isLoading && <Loading text="AI đang phân tích dữ liệu của bạn..." />}
 
-            {error && <Error message={error} onRetry={handleGenerateForecast} />}
+            {error && <ErrorComponent message={error} onRetry={handleGenerateForecast} />}
 
             {forecast && (
                 <div className="space-y-6">

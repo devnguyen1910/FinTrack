@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { useFinancials } from '../../context/FinancialContext';
 import { getFinancialAdvice } from '../../services/geminiService';
-import { Error } from '../ui/Error';
+// FIX: Aliased the Error component to avoid name collision with the built-in Error object.
+import { Error as ErrorComponent } from '../ui/Error';
 
 interface Message {
   id: string;
@@ -130,7 +131,7 @@ export const Advisor: React.FC = () => {
                 </div>
             </div>
           )}
-          {error && <Error message={error} onRetry={handleSend} />}
+          {error && <ErrorComponent message={error} onRetry={handleSend} />}
           <div ref={messagesEndRef} />
         </div>
 
